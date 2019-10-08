@@ -1,0 +1,50 @@
+from pathlib import Path
+import yarl
+
+CHUNK_SIZE = 4096
+
+MP3_BASE = 'http://www.birdsinbackyards.net/sites/www.birdsinbackyards.net/files/factsheets/audio'
+MP3 = (
+    yarl.URL(f'{MP3_BASE}/eudynamys-scolopacea.mp3'),
+    yarl.URL(f'{MP3_BASE}/cythrops-novaehollandiae.mp3'),
+    yarl.URL(f'{MP3_BASE}/ninox-novaeseelandiae.mp3'),
+    yarl.URL(f'{MP3_BASE}/podargus-strigoides.mp3'),
+    yarl.URL(f'{MP3_BASE}/cracticus-torquatus.mp3'),
+    yarl.URL(f'{MP3_BASE}/rhipidura-leucophrys.mp3'),
+    yarl.URL(f'{MP3_BASE}/vanellus-miles.mp3'),
+    yarl.URL(f'{MP3_BASE}/anthochaera-chrysoptera.mp3'),
+    yarl.URL(f'{MP3_BASE}/corvus-coronoides_0.mp3'),
+    yarl.URL(f'{MP3_BASE}/calyptorhynchus-funereus.mp3'),
+    yarl.URL(f'{MP3_BASE}/gymnorhina-tibicen.mp3'),
+    yarl.URL(f'{MP3_BASE}/strepera-graculina.mp3'),
+    yarl.URL(f'{MP3_BASE}/dacelo-novaeguineae.mp3'),
+    yarl.URL(f'{MP3_BASE}/anthochaera-carnunculata.mp3'),
+    yarl.URL(f'{MP3_BASE}/streptopelia-chinensis.mp3'),
+    yarl.URL(f'{MP3_BASE}/cacatua-galerita.mp3'),
+    yarl.URL(f'{MP3_BASE}/grallina-cyanoleuca.mp3'),
+    yarl.URL(f'{MP3_BASE}/cacatua-roseicapilla.mp3'),
+    yarl.URL(f'{MP3_BASE}/manorina-melanocephala.mp3'),
+    yarl.URL(f'{MP3_BASE}/pycnonotus-jocosus.mp3'),
+    yarl.URL(f'{MP3_BASE}/coracina-novaehollandiae.mp3'),
+    yarl.URL(f'{MP3_BASE}/aegotheles-cristatus.mp3'),
+    yarl.URL(f'{MP3_BASE}/ninox-strenua.mp3'),
+    yarl.URL(f'{MP3_BASE}/cacomantis-flabelliformis.mp3'),
+    yarl.URL(f'{MP3_BASE}/cuculus-pallidus.mp3'),
+    yarl.URL(f'{MP3_BASE}/cacomantis-variolosus.mp3'),
+    yarl.URL(f'{MP3_BASE}/turdus-merula.mp3'),
+    yarl.URL(f'{MP3_BASE}/acridotheres-tristis.mp3'),
+    yarl.URL(f'{MP3_BASE}/sturnus-vulgaris.mp3'),
+    yarl.URL(f'{MP3_BASE}/oriolus-sagittatus.mp3'),
+    yarl.URL(f'{MP3_BASE}/alisterus-scapularis.mp3'),
+    yarl.URL(f'{MP3_BASE}/trichoglossus-haematodus.mp3'),
+    yarl.URL(f'{MP3_BASE}/platycercus-elegans.mp3'),
+    yarl.URL(f'{MP3_BASE}/pardalotus-punctatus.mp3'),
+    yarl.URL(f'{MP3_BASE}/malurus-cyaneus.mp3'),
+    yarl.URL(f'{MP3_BASE}/zosterops-lateralis.mp3'),
+    yarl.URL(f'{MP3_BASE}/cacatua-tenuirostris.mp3'),
+    yarl.URL(f'{MP3_BASE}/phylidonyris-novaehollandiae.mp3'),
+    yarl.URL(f'{MP3_BASE}/sphecotheres-viridis.mp3'),
+)
+
+if __name__ == '__main__':
+    pass
