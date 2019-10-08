@@ -1,4 +1,5 @@
 from pathlib import Path
+import requests
 import yarl
 
 CHUNK_SIZE = 4096
@@ -47,4 +48,17 @@ MP3 = (
 )
 
 if __name__ == '__main__':
-    pass
+    download_dir = Path.home() / 'Pobrane' / 'birds_sample'
+    download_dir.mkdir(exist_ok=True)
+
+    with requests.Session() as session:
+        session.stream = True
+
+        for mp3_url in MP3:
+            mp3_file = download_dir / mp3_url.parts[-1]
+            mp3_file.touch()
+
+            with session.get(str(mp3_url)) as resp:
+                with mp3_file.open('wb') as mp3_handle:
+                    for chunk in resp.iter_content(CHUNK_SIZE):
+                        mp3_handle.write(chunk) 
