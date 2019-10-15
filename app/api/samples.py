@@ -1,8 +1,12 @@
 import logging
-
+import typing as tp
 from aiohttp import web
 
+from app.model import bird_sample
+
 LOG = logging.getLogger(__name__)
+
+BIRD_SAMPLES: tp.List[bird_sample.BirdSample] = []
 
 
 # aiohttp.web.View

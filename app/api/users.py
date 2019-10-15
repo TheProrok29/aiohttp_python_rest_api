@@ -1,8 +1,16 @@
 import logging
+import typing as tp
 
 from aiohttp import web
 
+from app.api import user
+
 LOG = logging.getLogger(__name__)
+
+USERS: tp.List[user.User] = [
+    user.User(name='tomasz', password='tomasz', role=user.UserRole.ADMIN),
+    user.User(name='helion', password='helion', role=user.UserRole.USER),
+]
 
 
 class Users(web.View):
@@ -18,7 +26,7 @@ class Users(web.View):
 class User(web.View):
     async def get(self) -> web.Response:
         LOG.info('Getting a single user')
-        raise web.HTTPNotImplemented( )
+        raise web.HTTPNotImplemented()
 
     async def delete(self) -> web.Response:
         LOG.info('Deleting an existing user')
