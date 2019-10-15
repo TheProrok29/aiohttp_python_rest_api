@@ -20,4 +20,4 @@ app.add_routes([web.get('/api/samples',
 
 # users api
 app.router.add_view('/admin/users', users_api.Users)
-app.router.add_view('/admin/users/{username}', users_api.User)
+app.router.add_view('/admin/users/{username:[a-z]+}', users_api.User)
