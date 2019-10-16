@@ -1,3 +1,4 @@
+import itertools
 import logging
 from pathlib import Path
 import typing as tp
@@ -41,7 +42,14 @@ class BirdSamples(web.View):
 
     async def delete(self) -> web.Response:
         LOG.info('Deleting an existing sample')
-        raise web.HTTPNotImplemented()
+        global BIRD_SAMPLES
+
+        sample_name = self.request.match_info['sample_name']
+        BIRD_SAMPLES = list(
+            itertools.filterfalse(lambda bs: bs.name == sample_name,
+                                  BIRD_SAMPLES))
+
+        return web.Response(status=204)
 
     async def get(self) -> web.Response:
         LOG.info('Getting an existing sample')
