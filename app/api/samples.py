@@ -35,6 +35,9 @@ class BirdSamples(web.View):
         sample_name = self.request.match_info['sample_name']
         sample_filename = f'{sample_name}.mp3'
 
+        is_full_read_enabled = parse_param_as_bool(
+            self.request.headers.get('X-Read-Full', None))
+
         loop = asyncio.get_running_loop()
         # run_in_executor
 
@@ -47,11 +50,19 @@ class BirdSamples(web.View):
         )
 
         sample_content = self.request.content
-
-        with (await loop.run_in_executor(None, sample_file.open,
-                                         'wb')) as handler:
-            async for chunk in sample_content.iter_chunked(CHUNK_SIZE):
-                await loop.run_in_executor(None, handler.write, chunk)
+        if is_full_read_enabled:
+            with (await loop.run_in_executor(None, sample_file.open,
+                                             'wb')) as handler:
+                await loop.run_in_executor(
+                    None,
+                    handler.write,
+                    await self.request.read(),
+                )
+        else:
+            with (await loop.run_in_executor(None, sample_file.open,
+                                             'wb')) as handler:
+                async for chunk in sample_content.iter_chunked(CHUNK_SIZE):
+                    await loop.run_in_executor(None, handler.write, chunk)
 
         global BIRD_SAMPLES
         BIRD_SAMPLES.append(
