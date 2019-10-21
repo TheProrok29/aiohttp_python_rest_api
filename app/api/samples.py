@@ -10,17 +10,10 @@ from app.model import bird_sample
 LOG = logging.getLogger(__name__)
 
 BIRD_SAMPLES: tp.List[bird_sample.BirdSample] = []
-for download_count, f in enumerate(
-    (Path.home() / 'Pobrane' / 'birds_sample').glob('*.mp3')):
-    if f.exists():
-        BIRD_SAMPLES.append(
-            bird_sample.BirdSample(
-                name=f.name.replace('.mp3', ''),
-                download_count=download_count,
-                path=f.absolute(),
-            ), )
+CHUNK_SIZE = 4096
 
-LOG.debug(f'BIRD_SAMPLES has now {len(BIRD_SAMPLES)} samples')
+SERVER_DOWNLOAD_DIR = Path.cwd() / 'data'
+SERVER_DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 
 def parse_param_as_bool(arg: tp.Optional[str] = None) -> tp.Optional[bool]:
@@ -31,14 +24,34 @@ def parse_param_as_bool(arg: tp.Optional[str] = None) -> tp.Optional[bool]:
     elif arg.lower() == 'false':
         return False
     else:
-        raise web.HTTPBadRequest(text=f'{arg} is neither "true" or "false"')
+        raise web.HTTPBadRequest(text=f'{arg} is neither "true" nor "false"')
 
 
 # aiohttp.web.View
 class BirdSamples(web.View):
     async def put(self) -> web.Response:
         LOG.info('Uploading a new sample')
-        raise web.HTTPNotImplemented()
+        sample_name = self.request.match_info['sample_name']
+        sample_filename = f'{sample_name}.mp3'
+
+        sample_file = SERVER_DOWNLOAD_DIR / sample_filename
+        sample_file.touch(exist_ok=True)
+
+        sample_content = self.request.content
+
+        with sample_file.open('wb') as handler:
+            async for chunk in sample_content.iter_chunked(CHUNK_SIZE):
+                handler.write(chunk)
+
+        global BIRD_SAMPLES
+        BIRD_SAMPLES.append(
+            bird_sample.BirdSample(
+                name=sample_name,
+                download_count=0,
+                path=sample_file.absolute(),
+            ))
+
+        return web.Response(status=201)
 
     async def delete(self) -> web.Response:
         LOG.info('Deleting an existing sample')
