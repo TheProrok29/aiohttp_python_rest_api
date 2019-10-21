@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import logging
 from pathlib import Path
@@ -34,14 +35,23 @@ class BirdSamples(web.View):
         sample_name = self.request.match_info['sample_name']
         sample_filename = f'{sample_name}.mp3'
 
+        loop = asyncio.get_running_loop()
+        # run_in_executor
+
         sample_file = SERVER_DOWNLOAD_DIR / sample_filename
-        sample_file.touch(exist_ok=True)
+        await loop.run_in_executor(
+            None,
+            sample_file.touch,
+            0o666,
+            True,
+        )
 
         sample_content = self.request.content
 
-        with sample_file.open('wb') as handler:
+        with (await loop.run_in_executor(None, sample_file.open,
+                                         'wb')) as handler:
             async for chunk in sample_content.iter_chunked(CHUNK_SIZE):
-                handler.write(chunk)
+                await loop.run_in_executor(None, handler.write, chunk)
 
         global BIRD_SAMPLES
         BIRD_SAMPLES.append(
