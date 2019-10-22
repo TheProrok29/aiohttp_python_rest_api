@@ -143,9 +143,23 @@ class BirdSamples(web.View):
 
         return web.Response(status=204)
 
-    async def get(self) -> web.Response:
+    async def get(self) -> web.FileResponse:
         LOG.info('Getting an existing sample')
-        raise web.HTTPNotImplemented()
+        sample_name = self.request.match_info['sample_name']
+
+        try:
+            found_sample = next(
+                filter(lambda bd: bd.name == sample_name, BIRD_SAMPLES))
+            found_sample.download_count += 1
+        except StopIteration:
+            raise web.HTTPNotFound(text=f'Sample {sample_name} does not exist')
+        else:
+            return web.FileResponse(path=found_sample.path,
+                                    chunk_size=CHUNK_SIZE,
+                                    headers={
+                                        hdrs.CONTENT_DISPOSITION:
+                                        f'filename="{sample_name}.mp3"',
+                                    })
 
 
 async def upload_many(request: web.Request) -> web.Response:
@@ -185,7 +199,7 @@ async def upload_many(request: web.Request) -> web.Response:
                                 chunk,
                             )
                             chunk = await part.read_chunk(CHUNK_SIZE)
-                    
+
                     new_samples.append(
                         bird_sample.BirdSample(
                             name=sample_name,
