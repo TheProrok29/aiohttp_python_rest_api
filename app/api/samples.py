@@ -119,7 +119,6 @@ class BirdSamples(web.View):
                     else:
                         raise web.HTTPBadRequest(
                             text='Nasted Multiparts are not supported')
-
         else:
             raise web.HTTPUnsupportedMediaType()
 
@@ -147,6 +146,63 @@ class BirdSamples(web.View):
     async def get(self) -> web.Response:
         LOG.info('Getting an existing sample')
         raise web.HTTPNotImplemented()
+
+
+async def upload_many(request: web.Request) -> web.Response:
+    LOG.info('Uploading many samples from multipart request')
+    content_type = request.content_type
+    if content_type == 'multipart/form-data':
+        reader = await request.multipart()
+        new_samples: tp.List[bird_sample.BirdSample] = []
+        async for part in reader:
+            if isinstance(part, aiohttp.BodyPartReader):
+                part_content_type = part.headers[hdrs.CONTENT_TYPE]
+                part_name = part.name
+
+                if part_content_type == 'audio/mpeg' and part_name.startswith(
+                        'sample_'):
+                    sample_name = part_name.replace('sample_', '')
+                    sample_filename = f'{sample_name}.mp3'
+
+                    loop = asyncio.get_running_loop()
+                    # run_in_executor
+
+                    sample_file = SERVER_DOWNLOAD_DIR / sample_filename
+                    await loop.run_in_executor(
+                        None,
+                        sample_file.touch,
+                        0o666,
+                        True,
+                    )
+
+                    with (await loop.run_in_executor(None, sample_file.open,
+                                                     'wb')) as handler:
+                        chunk = await part.read_chunk(CHUNK_SIZE)
+                        while chunk:
+                            await loop.run_in_executor(
+                                None,
+                                handler.write,
+                                chunk,
+                            )
+                            chunk = await part.read_chunk(CHUNK_SIZE)
+                    
+                    new_samples.append(
+                        bird_sample.BirdSample(
+                            name=sample_name,
+                            download_count=0,
+                            path=sample_file.absolute(),
+                        ), )
+            else:
+                raise web.HTTPBadRequest(
+                    text='Nasted Multiparts are not supported')
+
+        global BIRD_SAMPLES
+        BIRD_SAMPLES.extend(new_samples)
+
+        return web.json_response(
+            data=[nbd.dict(exclude={'path'}) for nbd in new_samples])
+    else:
+        raise web.HTTPUnsupportedMediaType()
 
 
 async def list_all(request: web.Request) -> web.Response:

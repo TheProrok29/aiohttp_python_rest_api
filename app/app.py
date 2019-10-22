@@ -15,8 +15,10 @@ app.router.add_get('/', root_api.index_handler)
 
 # bird samples api
 app.router.add_view('/api/samples/{sample_name}', samples_api.BirdSamples)
-app.add_routes([web.get('/api/samples',
-                        samples_api.list_all)])  # aiohttp.web.AbstractRouteDef
+app.add_routes([
+    web.get('/api/samples', samples_api.list_all),
+    web.post('/api/samples', samples_api.upload_many)
+])  # aiohttp.web.AbstractRouteDef
 
 # users api
 app.router.add_view('/admin/users', users_api.Users)
