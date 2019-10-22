@@ -154,12 +154,14 @@ class BirdSamples(web.View):
         except StopIteration:
             raise web.HTTPNotFound(text=f'Sample {sample_name} does not exist')
         else:
-            return web.FileResponse(path=found_sample.path,
+            resp = web.FileResponse(path=found_sample.path,
                                     chunk_size=CHUNK_SIZE,
                                     headers={
                                         hdrs.CONTENT_DISPOSITION:
                                         f'filename="{sample_name}.mp3"',
                                     })
+            resp.enable_compression()
+            return resp
 
 
 async def upload_many(request: web.Request) -> web.Response:

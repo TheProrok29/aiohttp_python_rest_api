@@ -2,6 +2,7 @@ import logging
 
 from aiohttp import web
 
+from app import middleware
 from app.api import root as root_api
 from app.api import samples as samples_api
 from app.api import users as users_api
@@ -10,7 +11,7 @@ LOG = logging.getLogger(__name__)
 
 LOG.info('Initializing Python AioHTTP birds API')
 
-app = web.Application()
+app = web.Application(middlewares=[middleware.authorize]) 
 app.router.add_get('/', root_api.index_handler)
 
 # bird samples api
