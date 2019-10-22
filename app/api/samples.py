@@ -4,7 +4,9 @@ import logging
 from pathlib import Path
 import typing as tp
 
+import aiohttp
 from aiohttp import web
+from aiohttp import hdrs
 
 from app.model import bird_sample
 
@@ -32,6 +34,10 @@ def parse_param_as_bool(arg: tp.Optional[str] = None) -> tp.Optional[bool]:
 class BirdSamples(web.View):
     async def put(self) -> web.Response:
         LOG.info('Uploading a new sample')
+
+        content_type = self.request.content_type
+        LOG.debug(f'Processing request with content type = {content_type}')
+
         sample_name = self.request.match_info['sample_name']
         sample_filename = f'{sample_name}.mp3'
 
@@ -50,19 +56,72 @@ class BirdSamples(web.View):
         )
 
         sample_content = self.request.content
-        if is_full_read_enabled:
-            with (await loop.run_in_executor(None, sample_file.open,
-                                             'wb')) as handler:
-                await loop.run_in_executor(
-                    None,
-                    handler.write,
-                    await self.request.read(),
-                )
+
+        if content_type == 'audio/mpeg':
+            if is_full_read_enabled:
+                with (await loop.run_in_executor(None, sample_file.open,
+                                                 'wb')) as handler:
+                    await loop.run_in_executor(
+                        None,
+                        handler.write,
+                        await self.request.read(),
+                    )
+            else:
+                with (await loop.run_in_executor(None, sample_file.open,
+                                                 'wb')) as handler:
+                    async for chunk in sample_content.iter_chunked(CHUNK_SIZE):
+                        await loop.run_in_executor(None, handler.write, chunk)
+        elif content_type == 'multipart/form-data':
+            if is_full_read_enabled:
+                data = await self.request.post()
+                sample = data[
+                    'sample']  # type: t.Union[str, bytes, web.FileField]
+                if isinstance(sample, web.FileField):
+                    if sample.headers[hdrs.CONTENT_TYPE] != 'audio/mpeg':
+                        raise web.HTTPUnsupportedMediaType()
+                    else:
+                        with (await
+                              loop.run_in_executor(None, sample_file.open,
+                                                   'wb')) as handler:
+                            await loop.run_in_executor(
+                                None,
+                                handler.write,
+                                sample.file.read(),
+                            )
+                else:
+                    raise web.HTTPBadRequest(
+                        text=f'Sample {sample_name} is not a file')
+            else:
+                # aiohttp.MultipartReader
+                part: tp.Optional[tp.Union[aiohttp.MultipartReader, aiohttp.
+                                           BodyPartReader]] = None
+                reader = await self.request.multipart()
+                async for part in reader:
+                    if isinstance(part, aiohttp.BodyPartReader):
+                        part_content_type = part.headers[hdrs.CONTENT_TYPE]
+                        part_name = part.name
+
+                        if part_content_type == 'audio/mpeg' and part_name == 'sample':
+                            with (await
+                                  loop.run_in_executor(None, sample_file.open,
+                                                       'wb')) as handler:
+                                chunk = await part.read_chunk(CHUNK_SIZE)
+                                while chunk:
+                                    await loop.run_in_executor(
+                                        None,
+                                        handler.write,
+                                        chunk,
+                                    )
+                                    chunk = await part.read_chunk(CHUNK_SIZE)
+                        else:
+                            raise web.HTTPBadRequest(
+                                text='Failed to find mp3 sample')
+                    else:
+                        raise web.HTTPBadRequest(
+                            text='Nasted Multiparts are not supported')
+
         else:
-            with (await loop.run_in_executor(None, sample_file.open,
-                                             'wb')) as handler:
-                async for chunk in sample_content.iter_chunked(CHUNK_SIZE):
-                    await loop.run_in_executor(None, handler.write, chunk)
+            raise web.HTTPUnsupportedMediaType()
 
         global BIRD_SAMPLES
         BIRD_SAMPLES.append(
