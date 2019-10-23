@@ -11,7 +11,7 @@ LOG = logging.getLogger(__name__)
 
 LOG.info('Initializing Python AioHTTP birds API')
 
-app = web.Application(middlewares=[middleware.authorize]) 
+app = web.Application(middlewares=[middleware.sign_off, middleware.authorize]) 
 app.router.add_get('/', root_api.index_handler)
 
 # bird samples api

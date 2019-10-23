@@ -1,4 +1,5 @@
 import base64
+import logging
 import typing as tp
 
 from aiohttp import hdrs
@@ -10,6 +11,7 @@ AIOHTTP_HANDLER = tp.Callable[[web.Request], tp.Awaitable[web.
 AIOHTTP_MIDDLEWARE = tp.Callable[[web.Request, AIOHTTP_HANDLER], tp.
                                  Coroutine[tp.Any, tp.Any, web.
                                            StreamResponse], ]
+LOG = logging.getLogger(__name__)
 
 
 @web.middleware
@@ -17,6 +19,7 @@ async def authorize(
         request: web.Request,
         handler: AIOHTTP_HANDLER,
 ) -> web.StreamResponse:
+    LOG.debug('before_request_handler')
     authorization = request.headers.get(hdrs.AUTHORIZATION, '')
     if not authorization:
         raise web.HTTPUnauthorized(headers={
@@ -36,6 +39,24 @@ async def authorize(
 
         if user and user.password == password:
             request['user'] = user
-            return await handler(request)
+            response = await handler(request)
+            LOG.debug('after_request_handler')
+            return response
         else:
             raise web.HTTPForbidden()
+
+
+@web.middleware
+async def sign_off(request: web.Request,
+                   handler: AIOHTTP_HANDLER) -> web.StreamResponse:
+    try:
+        LOG.debug('before_request_handler')
+        response = await handler(request)
+        LOG.debug('after_request_handler')
+    except web.HTTPException as ex:
+        LOG.debug('after_request_handler_exception')
+        ex.headers['X-BIRD-SAMPLES'] = 'aiohttp - performant HTTP server'
+        raise
+    else:
+        response.headers['X-BIRD-SAMPLES'] = 'aiohttp - performant HTTP server'
+        return response
