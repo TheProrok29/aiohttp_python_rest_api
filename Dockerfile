@@ -20,7 +20,7 @@ RUN apk del build_dependencies && rm -rf /root/.cache
 RUN apk add --no-cache tini=0.18.0-r0 && addgroup -S app && adduser -S app -G app
 
 COPY run.sh logging.conf ./
-COPY helion ./helion
+COPY app ./app
 
 USER app:app
 

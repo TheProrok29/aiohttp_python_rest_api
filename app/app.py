@@ -2,6 +2,7 @@ import logging
 
 from aiohttp import web
 
+from app import db
 from app import middleware
 from app.api import root as root_api
 from app.api import samples as samples_api
@@ -24,3 +25,5 @@ app.add_routes([
 # users api
 app.router.add_view('/admin/users', users_api.Users)
 app.router.add_view('/admin/users/{username:[a-z]+}', users_api.User)
+
+db.setup(app)
