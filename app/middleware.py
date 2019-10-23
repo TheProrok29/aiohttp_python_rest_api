@@ -1,7 +1,7 @@
 import base64
 import logging
 import typing as tp
-
+import asyncio
 from aiohttp import hdrs
 from aiohttp import web
 
@@ -60,3 +60,14 @@ async def sign_off(request: web.Request,
     else:
         response.headers['X-BIRD-SAMPLES'] = 'aiohttp - performant HTTP server'
         return response
+
+
+@web.middleware
+async def shield_mutating_request(
+        request: web.Request,
+        handler: AIOHTTP_HANDLER,
+) -> web.StreamResponse:
+    if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+        return await asyncio.shield(handler(request))
+    else:
+        return await handler(request)
