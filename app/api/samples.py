@@ -39,6 +39,11 @@ class BirdSamples(web.View):
         LOG.debug(f'Processing request with content type = {content_type}')
 
         sample_name = self.request.match_info['sample_name']
+        if await bird_sample.fetch_one(db_pool=self.request.app['db_pool'],
+                                       name=sample_name) is not None:
+            LOG.error(
+                f'Sample {sample_name} has been already uploaded, skipping...')
+            raise web.HTTPConflict(text=f'Sample {sample_name} already exists')
         sample_filename = f'{sample_name}.mp3'
 
         is_full_read_enabled = parse_param_as_bool(
@@ -122,13 +127,11 @@ class BirdSamples(web.View):
         else:
             raise web.HTTPUnsupportedMediaType()
 
-        global BIRD_SAMPLES
-        BIRD_SAMPLES.append(
-            bird_sample.BirdSample(
-                name=sample_name,
-                download_count=0,
-                path=sample_file.absolute(),
-            ))
+        await bird_sample.save(
+            db_pool=self.request.app['db_pool'],
+            name=sample_name,
+            path=sample_file,
+        )
 
         return web.Response(status=201)
 
@@ -180,6 +183,13 @@ async def upload_many(request: web.Request) -> web.Response:
                     sample_name = part_name.replace('sample_', '')
                     sample_filename = f'{sample_name}.mp3'
 
+                    if await bird_sample.fetch_one(
+                            db_pool=request.app['db_pool'], name=sample_name):
+                        LOG.debug(f'Sample {sample_name} already uploaded')
+                        continue
+
+                    sample_filename = f'{sample_name}.mp3'
+
                     loop = asyncio.get_running_loop()
                     # run_in_executor
 
@@ -203,19 +213,17 @@ async def upload_many(request: web.Request) -> web.Response:
                             chunk = await part.read_chunk(CHUNK_SIZE)
 
                     new_samples.append(
-                        bird_sample.BirdSample(
+                        await bird_sample.save(
+                            db_pool=request.app['db_pool'],
                             name=sample_name,
-                            download_count=0,
                             path=sample_file.absolute(),
                         ), )
             else:
                 raise web.HTTPBadRequest(
                     text='Nasted Multiparts are not supported')
 
-        global BIRD_SAMPLES
-        BIRD_SAMPLES.extend(new_samples)
-
         return web.json_response(
+            status=201 if new_samples else 200,
             data=[nbd.dict(exclude={'path'}) for nbd in new_samples])
     else:
         raise web.HTTPUnsupportedMediaType()
