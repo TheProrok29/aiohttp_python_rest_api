@@ -73,3 +73,14 @@ async def shield_mutating_request(
         return await asyncio.shield(handler(request))
     else:
         return await handler(request)
+
+@web.middleware
+async def requires_admin_access(
+    request: web.Request,
+    handler: AIOHTTP_HANDLER,
+) -> web.StreamResponse:
+    current_user = request.get('user', None)
+    if not current_user or current_user.role != user_model.UserRole.ADMIN:
+        raise web.HTTPForbidden()
+    else:
+        return await handler(request)

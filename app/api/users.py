@@ -15,7 +15,7 @@ class Users(web.View):
         try:
             new_user = user.User.parse_obj(await self.request.json())
             await user.save(
-                db_pool=self.request.app['db_pool'],
+                db_pool=self.request.config_dict['db_pool'],
                 name=new_user.name,
                 password=new_user.password,
                 role=new_user.role,
@@ -31,7 +31,7 @@ class Users(web.View):
 
     async def get(self) -> web.Response:
         LOG.info('Getting a list of all users')
-        users = await user.fetch_all(db_pool=self.request.app['db_pool'])
+        users = await user.fetch_all(db_pool=self.request.config_dict['db_pool'])
         return web.json_response(data=[u.dict() for u in users])
 
 
@@ -40,7 +40,7 @@ class User(web.View):
         LOG.info('Getting a single user')
         username = self.request.match_info['username']
         found_user = await user.fetch_one(
-            db_pool=self.request.app['db_pool'],
+            db_pool=self.request.config_dict['db_pool'],
             name=username,
         )
         if found_user:
@@ -55,5 +55,5 @@ class User(web.View):
         if username == self.request['user'].name:
             raise web.HTTPBadRequest(
                 text='You should not try to remove yourself')
-        await user.remove(db_pool=self.request.app['db_pool'], name=username)
+        await user.remove(db_pool=self.request.config_dict['db_pool'], name=username)
         return web.Response(status=204)

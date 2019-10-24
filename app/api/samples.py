@@ -38,7 +38,7 @@ class BirdSamples(web.View):
         LOG.debug(f'Processing request with content type = {content_type}')
 
         sample_name = self.request.match_info['sample_name']
-        if await bird_sample.fetch_one(db_pool=self.request.app['db_pool'],
+        if await bird_sample.fetch_one(db_pool=self.request.config_dict['db_pool'],
                                        name=sample_name) is not None:
             LOG.error(
                 f'Sample {sample_name} has been already uploaded, skipping...')
@@ -127,7 +127,7 @@ class BirdSamples(web.View):
             raise web.HTTPUnsupportedMediaType()
 
         await bird_sample.save(
-            db_pool=self.request.app['db_pool'],
+            db_pool=self.request.config_dict['db_pool'],
             name=sample_name,
             path=sample_file,
         )
@@ -139,12 +139,12 @@ class BirdSamples(web.View):
 
         sample_name = self.request.match_info['sample_name']
         sample = await bird_sample.fetch_one(
-            db_pool=self.request.app['db_pool'],
+            db_pool=self.request.config_dict['db_pool'],
             name=sample_name,
         )
         if sample:
             await bird_sample.remove(
-                db_pool=self.request.app['db_pool'],
+                db_pool=self.request.config_dict['db_pool'],
                 name=sample_name,
             )
             sample.path.unlink()
@@ -156,14 +156,14 @@ class BirdSamples(web.View):
         sample_name = self.request.match_info['sample_name']
 
         found_sample = await bird_sample.fetch_one(
-            db_pool=self.request.app['db_pool'],
+            db_pool=self.request.config_dict['db_pool'],
             name=sample_name,
         )
         if not found_sample:
             raise web.HTTPNotFound(text=f'Sample {sample_name} does not exist')
         else:
             await bird_sample.increment_download_count(
-                db_pool=self.request.app['db_pool'],
+                db_pool=self.request.config_dict['db_pool'],
                 name=found_sample.name,
                 current_download_count=found_sample.download_count,
             )
@@ -196,7 +196,7 @@ async def upload_many(request: web.Request) -> web.Response:
                     sample_name = part_name.replace('sample_', '')
 
                     if await bird_sample.fetch_one(
-                            db_pool=request.app['db_pool'], name=sample_name):
+                            db_pool=request.config_dict['db_pool'], name=sample_name):
                         LOG.debug('Sample {sample_name} already uploaded')
                         continue
 
@@ -226,7 +226,7 @@ async def upload_many(request: web.Request) -> web.Response:
 
                     new_samples.append(
                         await bird_sample.save(
-                            db_pool=request.app['db_pool'],
+                            db_pool=request.config_dict['db_pool'],
                             name=sample_name,
                             path=sample_file.absolute(),
                         ), )
@@ -246,7 +246,7 @@ async def list_all(request: web.Request) -> web.Response:
     # noDownloads=True|False
     LOG.info('Getting a list of all bird samples')
 
-    all_samples = await bird_sample.fetch_all(db_pool=request.app['db_pool'])
+    all_samples = await bird_sample.fetch_all(db_pool=request.config_dict['db_pool'])
 
     sort_by_downloads = parse_param_as_bool(request.query.get('sorted', None))
     filter_no_downloads = parse_param_as_bool(
