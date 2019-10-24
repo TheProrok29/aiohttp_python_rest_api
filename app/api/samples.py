@@ -150,19 +150,26 @@ class BirdSamples(web.View):
         LOG.info('Getting an existing sample')
         sample_name = self.request.match_info['sample_name']
 
-        try:
-            found_sample = next(
-                filter(lambda bd: bd.name == sample_name, BIRD_SAMPLES))
-            found_sample.download_count += 1
-        except StopIteration:
+        found_sample = await bird_sample.fetch_one(
+            db_pool=self.request.app['db_pool'],
+            name=sample_name,
+        )
+        if not found_sample:
             raise web.HTTPNotFound(text=f'Sample {sample_name} does not exist')
         else:
-            resp = web.FileResponse(path=found_sample.path,
-                                    chunk_size=CHUNK_SIZE,
-                                    headers={
-                                        hdrs.CONTENT_DISPOSITION:
-                                        f'filename="{sample_name}.mp3"',
-                                    })
+            await bird_sample.increment_download_count(
+                db_pool=self.request.app['db_pool'],
+                name=found_sample.name,
+                current_download_count=found_sample.download_count,
+            )
+            
+            resp = web.FileResponse(
+                path=found_sample.path,
+                chunk_size=CHUNK_SIZE,
+                headers={
+                    hdrs.CONTENT_DISPOSITION: f'filename="{sample_name}.mp3"',
+                },
+            )
             resp.enable_compression()
             return resp
 
@@ -173,6 +180,7 @@ async def upload_many(request: web.Request) -> web.Response:
     if content_type == 'multipart/form-data':
         reader = await request.multipart()
         new_samples: tp.List[bird_sample.BirdSample] = []
+
         async for part in reader:
             if isinstance(part, aiohttp.BodyPartReader):
                 part_content_type = part.headers[hdrs.CONTENT_TYPE]
@@ -181,11 +189,10 @@ async def upload_many(request: web.Request) -> web.Response:
                 if part_content_type == 'audio/mpeg' and part_name.startswith(
                         'sample_'):
                     sample_name = part_name.replace('sample_', '')
-                    sample_filename = f'{sample_name}.mp3'
 
                     if await bird_sample.fetch_one(
                             db_pool=request.app['db_pool'], name=sample_name):
-                        LOG.debug(f'Sample {sample_name} already uploaded')
+                        LOG.debug('Sample {sample_name} already uploaded')
                         continue
 
                     sample_filename = f'{sample_name}.mp3'

@@ -11,6 +11,18 @@ class BirdSample(pd.BaseModel):
     path: pd.FilePath
 
 
+async def increment_download_count(
+        db_pool: pool.Pool,
+        name: str,
+        current_download_count: int,
+) -> None:
+    await db_pool.execute(
+        'update public.bird_sample set download_count = $1 where name = $2',
+        current_download_count + 1,
+        name,
+    )
+
+
 async def fetch_one(
         db_pool: pool.Pool,
         name: str,
