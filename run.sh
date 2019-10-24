@@ -7,4 +7,4 @@ PYTHONASYNCIODEBUG=True \
   --reload \
   --workers 1 \
   --worker-class aiohttp.worker.GunicornUVLoopWebWorker \
-  app.app:app
+  app.app:init_app
