@@ -34,6 +34,12 @@ async def fetch_one(
     return BirdSample(**maybe_db_row) if maybe_db_row is not None else None
 
 
+async def fetch_all(db_pool: pool.Pool) -> tp.List[BirdSample]:
+    db_rows = await db_pool.fetch(
+        'select name, download_count, path from public.bird_sample', )
+    return [BirdSample(**row) for row in db_rows]
+
+
 async def save(
         db_pool: pool.Pool,
         name: str,

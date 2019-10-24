@@ -162,7 +162,7 @@ class BirdSamples(web.View):
                 name=found_sample.name,
                 current_download_count=found_sample.download_count,
             )
-            
+
             resp = web.FileResponse(
                 path=found_sample.path,
                 chunk_size=CHUNK_SIZE,
@@ -241,6 +241,8 @@ async def list_all(request: web.Request) -> web.Response:
     # noDownloads=True|False
     LOG.info('Getting a list of all bird samples')
 
+    all_samples = await bird_sample.fetch_all(db_pool=request.app['db_pool'])
+
     sort_by_downloads = parse_param_as_bool(request.query.get('sorted', None))
     filter_no_downloads = parse_param_as_bool(
         request.query.get('noDownloads', None))
@@ -248,8 +250,8 @@ async def list_all(request: web.Request) -> web.Response:
     filtered_samples = filter(
         lambda bs: bs.download_count == 0
         if filter_no_downloads else bs.download_count > 0,
-        BIRD_SAMPLES,
-    ) if filter_no_downloads is not None else BIRD_SAMPLES
+        all_samples,
+    ) if filter_no_downloads is not None else all_samples
 
     sorted_and_filtered_data = sorted(
         filtered_samples,
