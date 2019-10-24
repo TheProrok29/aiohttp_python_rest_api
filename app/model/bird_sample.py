@@ -23,6 +23,16 @@ async def increment_download_count(
     )
 
 
+async def remove(
+        db_pool: pool.Pool,
+        name: str,
+) -> None:
+    await db_pool.execute(
+        'delete from public.bird_sample where name = $1',
+        name,
+    )
+
+
 async def fetch_one(
         db_pool: pool.Pool,
         name: str,

@@ -12,7 +12,6 @@ from app.model import bird_sample
 
 LOG = logging.getLogger(__name__)
 
-BIRD_SAMPLES: tp.List[bird_sample.BirdSample] = []
 CHUNK_SIZE = 4096
 
 SERVER_DOWNLOAD_DIR = Path.cwd() / 'data'
@@ -137,12 +136,18 @@ class BirdSamples(web.View):
 
     async def delete(self) -> web.Response:
         LOG.info('Deleting an existing sample')
-        global BIRD_SAMPLES
 
         sample_name = self.request.match_info['sample_name']
-        BIRD_SAMPLES = list(
-            itertools.filterfalse(lambda bs: bs.name == sample_name,
-                                  BIRD_SAMPLES))
+        sample = await bird_sample.fetch_one(
+            db_pool=self.request.app['db_pool'],
+            name=sample_name,
+        )
+        if sample:
+            await bird_sample.remove(
+                db_pool=self.request.app['db_pool'],
+                name=sample_name,
+            )
+            sample.path.unlink()
 
         return web.Response(status=204)
 
