@@ -36,17 +36,21 @@ class Users(web.View):
 
     async def get(self) -> web.Response:
         LOG.info('Getting a list of all users')
-        return web.json_response(data=[u.dict() for u in USERS])
+        users = await user.fetch_all(db_pool=self.request.app['db_pool'])
+        return web.json_response(data=[u.dict() for u in users])
 
 
 class User(web.View):
     async def get(self) -> web.Response:
         LOG.info('Getting a single user')
-        try:
-            username = self.request.match_info['username']
-            found_user = next(filter(lambda u: u.name == username, USERS))
+        username = self.request.match_info['username']
+        found_user = await user.fetch_one(
+            db_pool=self.request.app['db_pool'],
+            name=username,
+        )
+        if found_user:
             return web.json_response(data=found_user.dict())
-        except StopIteration:
+        else:  
             LOG.exception(f'Failed to find user {username}')
             raise web.HTTPNotFound(text=f'User {username} does not exist')
 
