@@ -31,3 +31,20 @@ async def fetch_one(
         name,
     )
     return User(**maybe_db_row) if maybe_db_row is not None else None
+
+
+async def save(db_pool: pool.Pool, name: str, password: str,
+               role: UserRole) -> None:
+    await db_pool.execute(
+        'insert into public.user (name, password, role) values ($1, $2, $3)',
+        name,
+        password,
+        role,
+    )
+
+
+async def remove(db_pool: pool.Pool, name: str) -> None:
+    await db_pool.execute(
+        'delete from public.user where name = $1',
+        name,
+    )

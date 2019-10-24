@@ -4,6 +4,7 @@ import typing as tp
 import asyncio
 from aiohttp import hdrs
 from aiohttp import web
+from app.model import user as user_model
 
 AIOHTTP_HANDLER = tp.Callable[[web.Request], tp.Awaitable[web.
                                                           StreamResponse], ]
@@ -33,9 +34,10 @@ async def authorize(
         username, password = base64.b64decode(
             credentials.encode('utf-8')).decode('utf-8').split(':')
 
-        from app.api import users
-
-        user = next(filter(lambda u: u.name == username, users.USERS), None)
+        user = await user_model.fetch_one(
+            db_pool=request.app['db_pool'],
+            name=username,
+        )
 
         if user and user.password == password:
             request['user'] = user
