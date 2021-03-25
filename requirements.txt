@@ -40,7 +40,7 @@ pycparser==2.19
 pydantic==0.32.2
 pyflakes==2.1.1
 Pygments==2.4.2
-PyYAML==5.1.2
+PyYAML==5.4
 six==1.12.0
 smmap2==2.0.5
 stevedore==1.31.0
